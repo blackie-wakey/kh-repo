@@ -88,7 +88,3 @@ Add a validation to the backend to check that an employee does with the same nam
 - [Spraypaint.js](https://www.graphiti.dev/js)
 - [Tanstack Table](https://tanstack.com/table/v7)
 - [Tailwind.css](https://tailwindcss.com/)
-
-### Contact
-
-If you have any questions or if anything needs clarifying, please contact me at aaron.rama@keyhook.com
