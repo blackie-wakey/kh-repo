@@ -9,20 +9,21 @@ jest.mock('../../application-record/models/employee.ts', () => ({
         page: jest.fn().mockReturnThis(),
         per: jest.fn().mockReturnThis(),
         stats: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
         all: jest.fn().mockResolvedValue({
             data: [
-                { firstName: 'John', lastName: 'Doe', age: 30, position: 'Developer', department: { name: 'Engineering' } },
-                { firstName: 'Jane', lastName: 'Smith', age: 28, position: 'Designer', department: { name: 'Design' } },
-                { firstName: 'Peter', lastName: 'Jones', age: 35, position: 'Manager', department: { name: 'Management' } },
-                { firstName: 'Alice', lastName: 'Brown', age: 26, position: 'Analyst', department: { name: 'Analytics' } },
-                { firstName: 'Bob', lastName: 'Green', age: 40, position: 'Architect', department: { name: 'Engineering' } },
-                { firstName: 'Charlie', lastName: 'White', age: 29, position: 'Tester', department: { name: 'Quality Assurance' } },
-                { firstName: 'David', lastName: 'Black', age: 32, position: 'Support', department: { name: 'Support' } },
-                { firstName: 'Eve', lastName: 'Gray', age: 27, position: 'Sales', department: { name: 'Sales' } },
-                { firstName: 'Frank', lastName: 'Purple', age: 38, position: 'Marketing', department: { name: 'Marketing' } },
-                { firstName: 'Grace', lastName: 'Yellow', age: 31, position: 'HR', department: { name: 'Human Resources' } },
-                { firstName: 'Henry', lastName: 'Orange', age: 33, position: 'Developer', department: { name: 'Engineering' } },
-                { firstName: 'Ivy', lastName: 'Silver', age: 25, position: 'Designer', department: { name: 'Design' } },
+                { firstName: 'John', lastName: 'Doe', age: 21, position: 'Developer', department: { name: 'Engineering' } },
+                { firstName: 'Jane', lastName: 'Smith', age: 22, position: 'Designer', department: { name: 'Design' } },
+                { firstName: 'Peter', lastName: 'Jones', age: 23, position: 'Manager', department: { name: 'Management' } },
+                { firstName: 'Alice', lastName: 'Brown', age: 24, position: 'Analyst', department: { name: 'Analytics' } },
+                { firstName: 'Bob', lastName: 'Green', age: 25, position: 'Architect', department: { name: 'Engineering' } },
+                { firstName: 'Charlie', lastName: 'White', age: 26, position: 'Tester', department: { name: 'Quality Assurance' } },
+                { firstName: 'David', lastName: 'Black', age: 27, position: 'Support', department: { name: 'Support' } },
+                { firstName: 'Eve', lastName: 'Gray', age: 28, position: 'Sales', department: { name: 'Sales' } },
+                { firstName: 'Frank', lastName: 'Purple', age: 29, position: 'Marketing', department: { name: 'Marketing' } },
+                { firstName: 'Grace', lastName: 'Yellow', age: 30, position: 'HR', department: { name: 'Human Resources' } },
+                { firstName: 'Henry', lastName: 'Orange', age: 31, position: 'Developer', department: { name: 'Engineering' } },
+                { firstName: 'Ivy', lastName: 'Silver', age: 32, position: 'Designer', department: { name: 'Design' } },
             ],
             meta: { stats: { total: { count: 12 } } }, // Total 12 records (2 pages with pageSize 10)
         }),
@@ -95,6 +96,51 @@ describe('EmployeeTable with TanStack React Table', () => {
 
             expect(johnRow).toHaveTextContent('Developer');
             expect(johnRow).toHaveTextContent('Engineering');
+        });
+    });
+
+    describe('Sorting Tests', () => {
+        it('should sort by first name in ascending order when clicked once', async () => {
+            render(<EmployeeTable />);
+
+            await waitFor(() => screen.getByText('John'));
+
+            const firstNameHeader = screen.getByText('First Name');
+            await userEvent.click(firstNameHeader);
+
+            await waitFor(() => screen.getByText('Alice'));
+
+            const firstRow = screen.getByText('Alice').closest('tr');
+            const secondRow = firstRow?.nextElementSibling;
+            expect(firstRow?.textContent).toContain('Alice');
+            expect(secondRow?.textContent).toContain('Bob');
+        });
+
+        it('should sort by age in descending order when clicked twice', async () => {
+            render(<EmployeeTable />);
+
+            await waitFor(() => screen.getByText('John'));
+            const ageHeader = screen.getByText('Age');
+            await userEvent.click(ageHeader);
+            await userEvent.click(ageHeader);
+
+            await waitFor(() => screen.getByText('Ivy'));
+            const firstRow = screen.getByText('Ivy').closest('tr');
+            const secondRow = firstRow?.nextElementSibling;
+            expect(secondRow?.textContent).toContain('Henry');
+        });
+
+        it('should not sort by department', async () => {
+            render(<EmployeeTable />);
+
+            await waitFor(() => screen.getByText('John'));
+
+            const departmentHeader = screen.getByText('Department');
+            expect(departmentHeader).toBeInTheDocument();
+
+            expect(departmentHeader).not.toHaveClass('cursor-pointer');
+            const firstRow = screen.getByText('John').closest('tr');
+            expect(firstRow?.textContent).toContain('Engineering');
         });
     });
 });

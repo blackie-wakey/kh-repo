@@ -5,6 +5,7 @@ import {
     getPaginationRowModel,
     flexRender,
     ColumnDef,
+    SortingState
 } from "@tanstack/react-table";
 import { Department } from "../../application-record/models/department.ts";
 import { Employee } from "../../application-record/models/employee.ts";
@@ -16,6 +17,7 @@ const EmployeeTable = () => {
     const [page, setPage] = useState(1);
     const [pageCount, setPageCount] = useState(0);
     const [rowCount, setRowCount] = useState(0);
+    const [sorting, setSorting] = useState<SortingState>([]);
     const pageSize = 10;
 
     const columns = useMemo<ColumnDef<EmployeeWithDept>[]>(() => [
@@ -27,18 +29,27 @@ const EmployeeTable = () => {
             header: "Department",
             accessorFn: (row) => row.department?.name || "N/A",
             id: "departmentName",
+            enableSorting: false,
         },
     ], []);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await Employee
-                    .includes("department")
+                const sortQuery = sorting.reduce<Record<string, 'asc' | 'desc'>>((acc, { id, desc }) => {
+                    acc[id] = desc ? 'desc' : 'asc';
+                    return acc;
+                }, {});
+
+                let query = Employee.includes("department")
                     .page(page)
                     .per(pageSize)
-                    .stats({ total: "count" })
-                    .all();
+                    .stats({ total: "count" });
+
+                if (Object.keys(sorting).length > 0) {
+                    query = query.order(sortQuery);
+                }
+                const response = await query.all();
 
                 setData(response.data as EmployeeWithDept[]);
                 setPageCount(Math.ceil(response.meta?.stats.total.count / pageSize) || 1);
@@ -49,7 +60,7 @@ const EmployeeTable = () => {
         };
 
         fetchData();
-    }, [page, pageSize]);
+    }, [page, pageSize, sorting]);
 
     const table = useReactTable({
         data,
@@ -61,7 +72,10 @@ const EmployeeTable = () => {
                 pageIndex: page - 1,
                 pageSize,
             },
+            sorting,
         },
+        onSortingChange: setSorting,
+        manualSorting: true,
         manualPagination: true,
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
@@ -78,14 +92,29 @@ const EmployeeTable = () => {
                 <thead className="bg-gray-100">
                 {table.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id}>
-                        {headerGroup.headers.map((header) => (
-                            <th
-                                key={header.id}
-                                className="px-4 py-2 text-left text-sm font-semibold text-gray-700 border-b border-gray-300"
-                            >
-                                {flexRender(header.column.columnDef.header, header.getContext())}
-                            </th>
-                        ))}
+                        {headerGroup.headers.map((header) => {
+                            const isSortable = header.column.getCanSort();
+                            return (
+                                <th
+                                    key={header.id}
+                                    className="px-4 py-2 text-left text-sm font-semibold text-gray-700 border-b border-gray-300 cursor-pointer select-none"
+                                    onClick={isSortable ? header.column.getToggleSortingHandler() : undefined}
+                                >
+                                    <div className="flex items-center gap-1">
+                                        {flexRender(header.column.columnDef.header, header.getContext())}
+                                        {isSortable && (
+                                            <span className="text-xs">
+                                                {{
+                                                    asc: '↑',
+                                                    desc: '↓',
+                                                }[header.column.getIsSorted() as string] ?? ''}
+                                            </span>
+                                        )}
+                                    </div>
+                                </th>
+                            );
+                        })}
+
                     </tr>
                 ))}
                 </thead>
