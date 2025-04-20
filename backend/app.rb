@@ -1,49 +1,33 @@
 require 'faker'
 require 'active_record'
-require './seeds'
 require 'kaminari'
 require 'sinatra/base'
 require 'graphiti'
 require 'graphiti/adapters/active_record'
 
-class ApplicationResource < Graphiti::Resource
-  self.abstract_class = true
-  self.adapter = Graphiti::Adapters::ActiveRecord
-  self.base_url = 'http://localhost:4567'
-  self.endpoint_namespace = '/api/v1'
-  # implement Graphiti.config.context_for_endpoint for validation
-  self.validate_endpoints = false
-end
+# Set the environment (defaults to development)
+env = ENV['RACK_ENV'] || 'development'
 
-class DepartmentResource < ApplicationResource
-  self.model = Department
-  self.type = :departments
+# Determine the database file based on the environment
+db_path = env == 'test' ? 'db/test.sqlite3' : 'db/employee-directory.sqlite3'
 
-  attribute :name, :string
-end
+# Establish the database connection
+ActiveRecord::Base.establish_connection(
+  adapter: 'sqlite3',
+  database: db_path
+)
 
+# Include the necessary models, resources, and controllers
+require_relative './models/application_record'
+require_relative './models/department'
+require_relative './models/employee'
+require_relative './config/application_resource'
+require_relative './resources/department_resource'
+require_relative './resources/employee_resource'
+require_relative './controllers/employee_directory_app'
+
+# Seed the database only if it's in development and not already seeded
+require_relative './seeds' if env == 'development'
+
+# Setup Graphiti framework
 Graphiti.setup!
-
-class EmployeeDirectoryApp < Sinatra::Application
-  configure do
-    mime_type :jsonapi, 'application/vnd.api+json'
-  end
-
-  before do
-    content_type :jsonapi
-  end
-
-  after do
-    ActiveRecord::Base.connection_handler.clear_active_connections!
-  end
-
-  get '/api/v1/departments' do
-    departments = DepartmentResource.all(params)
-    departments.to_jsonapi
-  end
-
-  get '/api/v1/departments/:id' do
-    departments = DepartmentResource.find(params)
-    departments.to_jsonapi
-  end
-end
