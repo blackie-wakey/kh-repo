@@ -1,0 +1,134 @@
+import { useEffect, useMemo, useState } from "react";
+import {
+    useReactTable,
+    getCoreRowModel,
+    getPaginationRowModel,
+    flexRender,
+    ColumnDef,
+} from "@tanstack/react-table";
+import { Department } from "../../application-record/models/department.ts";
+import { Employee } from "../../application-record/models/employee.ts";
+
+type EmployeeWithDept = Employee & { department?: Department };
+
+const EmployeeTable = () => {
+    const [data, setData] = useState<EmployeeWithDept[]>([]);
+    const [page, setPage] = useState(1);
+    const [pageCount, setPageCount] = useState(0);
+    const [rowCount, setRowCount] = useState(0);
+    const pageSize = 10;
+
+    const columns = useMemo<ColumnDef<EmployeeWithDept>[]>(() => [
+        { accessorKey: "firstName", header: "First Name" },
+        { accessorKey: "lastName", header: "Last Name" },
+        { accessorKey: "age", header: "Age" },
+        { accessorKey: "position", header: "Position" },
+        {
+            header: "Department",
+            accessorFn: (row) => row.department?.name || "N/A",
+            id: "departmentName",
+        },
+    ], []);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await Employee
+                    .includes("department")
+                    .page(page)
+                    .per(pageSize)
+                    .stats({ total: "count" })
+                    .all();
+
+                setData(response.data as EmployeeWithDept[]);
+                setPageCount(Math.ceil(response.meta?.stats.total.count / pageSize) || 1);
+                setRowCount(response.meta?.stats.total.count || 0);
+            } catch (error) {
+                console.error("Error fetching employee data:", error);
+            }
+        };
+
+        fetchData();
+    }, [page, pageSize]);
+
+    const table = useReactTable({
+        data,
+        columns,
+        pageCount,
+        rowCount,
+        state: {
+            pagination: {
+                pageIndex: page - 1,
+                pageSize,
+            },
+        },
+        manualPagination: true,
+        getCoreRowModel: getCoreRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
+        onPaginationChange: (updater) => {
+            const newState =
+                typeof updater === "function" ? updater({ pageIndex: page - 1, pageSize }) : updater;
+            setPage(newState.pageIndex + 1);
+        },
+    });
+
+    return (
+        <div className="p-4">
+            <table className="min-w-full border border-gray-300 rounded-md shadow-sm">
+                <thead className="bg-gray-100">
+                {table.getHeaderGroups().map((headerGroup) => (
+                    <tr key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                            <th
+                                key={header.id}
+                                className="px-4 py-2 text-left text-sm font-semibold text-gray-700 border-b border-gray-300"
+                            >
+                                {flexRender(header.column.columnDef.header, header.getContext())}
+                            </th>
+                        ))}
+                    </tr>
+                ))}
+                </thead>
+                <tbody>
+                {table.getRowModel().rows.map((row) => (
+                    <tr
+                        key={row.id}
+                        className="hover:bg-gray-50 transition-colors duration-150"
+                    >
+                        {row.getVisibleCells().map((cell) => (
+                            <td
+                                key={cell.id}
+                                className="px-4 py-2 text-sm text-gray-800 border-b border-gray-200"
+                            >
+                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </td>
+                        ))}
+                    </tr>
+                ))}
+                </tbody>
+            </table>
+
+            <div className="mt-4 flex items-center gap-4 justify-start">
+            <button
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+                className="px-3 py-1 rounded bg-gray-500 text-white hover:bg-gray-600 disabled:opacity-50"
+            >
+                Prev
+            </button>
+            <span className="text-sm text-gray-600">
+                Page {page} of {Math.ceil(pageCount)}
+            </span>
+            <button
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+                className="px-3 py-1 rounded bg-gray-500 text-white hover:bg-gray-600 disabled:opacity-50"
+            >
+                Next
+            </button>
+            </div>
+        </div>
+    );
+};
+
+export default EmployeeTable;
