@@ -1,9 +1,14 @@
-ActiveRecord::Base.establish_connection adapter: 'sqlite3',
-                                        database: 'sqlite3:employee-directory.sqlite3'
+# frozen_string_literal: true
 
+# seeds.rb
+
+require 'faker'
+
+# Only seed if the database is empty AND not in test environment
+env = ENV['RACK_ENV'] || 'development'
 seeded = !ActiveRecord::Base.connection.tables.empty?
 
-unless seeded
+unless seeded || env == 'test'
   ActiveRecord::Migration.verbose = true
   ActiveRecord::Schema.define(version: 1) do
     create_table :employees do |t|
@@ -18,21 +23,8 @@ unless seeded
       t.string :name
     end
   end
-end
 
-class ApplicationRecord < ActiveRecord::Base
-  self.abstract_class = true
-end
-
-class Employee < ApplicationRecord
-  belongs_to :department
-end
-
-class Department < ApplicationRecord
-  has_many :employees
-end
-
-unless seeded
+  # Create departments
   departments = [
     Department.create!(name: 'Engineering'),
     Department.create!(name: 'Product'),
@@ -46,6 +38,7 @@ unless seeded
     Department.create!(name: 'IT')
   ]
 
+  # Create employees
   1000.times do
     Employee.create!(
       first_name: Faker::Name.first_name,

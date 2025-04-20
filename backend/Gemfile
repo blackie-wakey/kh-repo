@@ -10,3 +10,10 @@ gem 'rackup'
 gem 'sinatra'
 
 gem 'sqlite3', '~> 1.4.2'
+
+
+# For testing
+gem 'database_cleaner-active_record', '~> 2.0'
+gem 'factory_bot', '~> 6.0'          # FactoryBot for test data generation
+gem 'rack-test', '~> 2.1'            # To simulate HTTP requests in Sinatra
+gem 'rspec', '~> 3.10', '>= 3.10.0'  # RSpec for testing
