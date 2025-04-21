@@ -1,37 +1,29 @@
-import {useMemo, useState} from "react";
-import {ColumnDef, SortingState} from "@tanstack/react-table";
-import {Department} from "../../application-record/models/department.ts";
-import {Employee} from "../../application-record/models/employee.ts";
+import {useState} from "react";
+import {SortingState} from "@tanstack/react-table";
 import {useEmployeeTableData} from "./hooks/useEmployeeTableData";
-import {EmployeeTableView} from "./EmployeeTableView";
-
-type EmployeeWithDept = Employee & { department?: Department };
+import {EmployeeTableView} from "./components/EmployeeTableView.tsx";
+import {AddEmployeeModal} from "./components/AddEmployeeModal.tsx";
 
 const EmployeeList = () => {
     const [page, setPage] = useState(1);
     const [sorting, setSorting] = useState<SortingState>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [departmentFilter, setDepartmentFilter] = useState("");
+    const [showModal, setShowModal] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0);
 
     const {data, pageCount, rowCount, departments} = useEmployeeTableData(
         page,
         sorting,
         searchQuery,
-        departmentFilter
+        departmentFilter,
+        refreshKey
     );
 
-    const columns = useMemo<ColumnDef<EmployeeWithDept>[]>(() => [
-        {accessorKey: "firstName", header: "First Name"},
-        {accessorKey: "lastName", header: "Last Name"},
-        {accessorKey: "age", header: "Age"},
-        {accessorKey: "position", header: "Position"},
-        {
-            header: "Department",
-            accessorFn: (row) => row.department?.name || "N/A",
-            id: "departmentName",
-            enableSorting: false,
-        },
-    ], []);
+    const refetchTrigger = () => {
+        setRefreshKey((prev) => prev + 1);
+        setPage(pageCount);
+    };
 
     return (
         <div className="p-4">
@@ -49,7 +41,10 @@ const EmployeeList = () => {
 
                 <select
                     value={departmentFilter}
-                    onChange={(e) => setDepartmentFilter(e.target.value)}
+                    onChange={(e) => {
+                        setDepartmentFilter(e.target.value);
+                        setPage(1);
+                    }}
                     className="pr-3 px-3 py-2 border border-gray-300 rounded-md shadow-sm cursor-pointer"
                 >
                     <option value="">All Departments</option>
@@ -59,11 +54,17 @@ const EmployeeList = () => {
                         </option>
                     ))}
                 </select>
+
+                <button
+                    onClick={() => setShowModal(true)}
+                    className="px-3 py-2 rounded bg-gray-600 text-white hover:bg-gray-700 shadow-md"
+                >
+                    Add Employee
+                </button>
             </div>
 
             <EmployeeTableView
                 data={data}
-                columns={columns}
                 pageCount={pageCount}
                 rowCount={rowCount}
                 page={page}
@@ -71,6 +72,13 @@ const EmployeeList = () => {
                 sorting={sorting}
                 setSorting={setSorting}
             />
+
+            <AddEmployeeModal
+                key={refreshKey}
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                departments={departments}
+                onEmployeeAdded={refetchTrigger}/>
         </div>
     );
 };
