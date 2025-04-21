@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# EmployeeResource handles JSON:API serialization and querying for Employee models via Graphiti.
+# EmployeeResource handles JSON:API serialization and querying for EmployeeList models via Graphiti.
 # It defines the exposed attributes and relationships, such as the association to Department.
 class EmployeeResource < ApplicationResource
   self.model = Employee

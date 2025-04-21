@@ -17,7 +17,20 @@ const mockEmployeeData = [
     { firstName: 'Ivy', lastName: 'Silver', age: 32, position: 'Designer', department: { name: 'Design' } },
 ];
 
-export const mockEmployeeQuery = {
+const mockDepartmentData = [
+    { id: '1', type: 'departments', attributes: { name: 'Engineering' } },
+    { id: '2', type: 'departments', attributes: { name: 'Design' } },
+    { id: '3', type: 'departments', attributes: { name: 'Management' } },
+    { id: '4', type: 'departments', attributes: { name: 'Analytics' } },
+    { id: '5', type: 'departments', attributes: { name: 'Engineering' } },
+    { id: '6', type: 'departments', attributes: { name: 'Quality Assurance' } },
+    { id: '7', type: 'departments', attributes: { name: 'Support' } },
+    { id: '8', type: 'departments', attributes: { name: 'Sales' } },
+    { id: '9', type: 'departments', attributes: { name: 'Marketing' } },
+    { id: '10', type: 'departments', attributes: { name: 'Human Resources' } },
+];
+
+const mockEmployeeQuery = {
     page: jest.fn().mockReturnThis(),
     per: jest.fn().mockReturnThis(),
     order: jest.fn().mockReturnThis(),
@@ -29,9 +42,22 @@ export const mockEmployeeQuery = {
     }),
 };
 
+const mockDepartmentQuery = {
+    all: jest.fn().mockResolvedValue({
+        data: mockDepartmentData,
+        meta: {},
+    }),
+};
+
 jest.mock('../../application-record/models/employee.ts', () => ({
     Employee: {
         includes: jest.fn(() => mockEmployeeQuery),
+    },
+}));
+
+jest.mock('../../application-record/models/department.ts', () => ({
+    Department: {
+        includes: jest.fn(() => mockDepartmentQuery),
     },
 }));
 
@@ -41,7 +67,7 @@ describe('EmployeeTable with React Table', () => {
         render(<EmployeeTable />);
     });
 
-    describe('Employee Data Rendering', () => {
+    describe('EmployeeList Data Rendering', () => {
         it('should render the correct employee data in the table', async () => {
             await waitFor(() => screen.getByText('John'));
             const johnCell = screen.getByText('John');
@@ -134,6 +160,23 @@ describe('EmployeeTable with React Table', () => {
                 first_or_last_name: 'John',
             });
         });
+
+        it('should generate the correct query when filtering by department', async () => {
+            await waitFor(() => {
+                expect(screen.getByRole('combobox')).toBeInTheDocument();
+            });
+
+            const departmentSelect = screen.getByRole('combobox');
+            const options = departmentSelect.querySelectorAll('option');
+            expect(options.length).toBeGreaterThan(0);
+
+            await userEvent.selectOptions(departmentSelect, mockDepartmentData[5].attributes.name);
+
+            expect(mockEmployeeQuery.where).toHaveBeenCalledWith({
+                department_id: mockDepartmentData[5].id,
+            });
+        });
+
 
         it('should generate the correct query with pagination and sorting', async () => {
             expect(mockEmployeeQuery.page).toHaveBeenCalledWith(1);
