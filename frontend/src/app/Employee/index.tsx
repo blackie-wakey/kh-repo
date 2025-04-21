@@ -18,6 +18,7 @@ const EmployeeTable = () => {
     const [pageCount, setPageCount] = useState(0);
     const [rowCount, setRowCount] = useState(0);
     const [sorting, setSorting] = useState<SortingState>([]);
+    const [searchQuery, setSearchQuery] = useState("");
     const pageSize = 10;
 
     const columns = useMemo<ColumnDef<EmployeeWithDept>[]>(() => [
@@ -44,10 +45,12 @@ const EmployeeTable = () => {
                 let query = Employee.includes("department")
                     .page(page)
                     .per(pageSize)
+                    .order(sortQuery)
                     .stats({ total: "count" });
 
-                if (Object.keys(sorting).length > 0) {
-                    query = query.order(sortQuery);
+                if (searchQuery) {
+                    query = query
+                        .where({ first_or_last_name: `${searchQuery}` });
                 }
                 const response = await query.all();
 
@@ -60,7 +63,7 @@ const EmployeeTable = () => {
         };
 
         fetchData();
-    }, [page, pageSize, sorting]);
+    }, [page, pageSize, sorting, searchQuery]);
 
     const table = useReactTable({
         data,
@@ -88,6 +91,16 @@ const EmployeeTable = () => {
 
     return (
         <div className="p-4">
+            <div className="mb-4">
+                <input
+                    type="text"
+                    placeholder="Search by First or Last Name"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-md w-64"
+                />
+            </div>
+
             <table className="min-w-full border border-gray-300 rounded-md shadow-sm">
                 <thead className="bg-gray-100">
                 {table.getHeaderGroups().map((headerGroup) => (
