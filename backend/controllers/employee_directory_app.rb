@@ -33,4 +33,31 @@ class EmployeeDirectoryApp < Sinatra::Application
     employees = EmployeeResource.find(params)
     employees.to_jsonapi
   end
+
+  post '/api/v1/employees' do
+    request_payload = JSON.parse(request.body.read)
+    attributes = request_payload.dig('data', 'attributes') || {}
+
+    employee = Employee.new(
+      first_name: attributes['first_name'],
+      last_name: attributes['last_name'],
+      age: attributes['age'],
+      position: attributes['position'],
+      department_id: attributes['department_id']
+    )
+
+    if employee.save
+      status 201
+      EmployeeResource.find(id: employee.id).to_jsonapi
+    else
+      status 422
+      {
+        errors: employee.errors.map do |message|
+          {
+            detail: message
+          }
+        end
+      }.to_json
+    end
+  end
 end

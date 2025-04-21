@@ -5,7 +5,13 @@ import {SortingState} from "@tanstack/react-table";
 
 type EmployeeWithDept = Employee & { department?: Department };
 
-export const useEmployeeTableData = (page: number, sorting: SortingState, searchQuery: string, departmentFilter: string) => {
+export const useEmployeeTableData = (
+    page: number,
+    sorting: SortingState,
+    searchQuery: string,
+    departmentFilter: string,
+    refreshKey: number,
+) => {
     const [data, setData] = useState<EmployeeWithDept[]>([]);
     const [pageCount, setPageCount] = useState(0);
     const [rowCount, setRowCount] = useState(0);
@@ -58,7 +64,7 @@ export const useEmployeeTableData = (page: number, sorting: SortingState, search
         };
 
         fetchData();
-    }, [page, sorting, searchQuery, departmentFilter]);
+    }, [page, sorting, searchQuery, departmentFilter, refreshKey]);
 
     return {data, pageCount, rowCount, departments};
 };

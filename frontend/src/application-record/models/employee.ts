@@ -10,6 +10,7 @@ export class Employee extends ApplicationRecord {
     @Attr() lastName!: string
     @Attr() age!: number
     @Attr() position!: string
+    @Attr() departmentId!: number;
 
     @BelongsTo() department!: Department;
 }
